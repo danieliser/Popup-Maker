@@ -21,12 +21,10 @@ class PUM_Admin_BlockEditor {
 			return;
 		}
 
-		// TODO Test if this is needed in core or not.
 		add_action( 'enqueue_block_editor_assets', [ 'PUM_Site_Assets', 'register_styles' ] );
 		add_action( 'enqueue_block_editor_assets', [ __CLASS__, 'register_editor_assets' ] );
-
-		// Here for future use.
-		// add_action( 'enqueue_block_assets', [ __CLASS__, 'register_block_assets' ] );
+		add_action( 'enqueue_block_editor_assets', [ __CLASS__, 'register_block_assets' ] );
+		add_action( 'enqueue_block_assets', [ __CLASS__, 'register_block_assets' ] );
 	}
 
 	/**
@@ -38,6 +36,7 @@ class PUM_Admin_BlockEditor {
 	 * @since 1.10.0
 	 */
 	public static function register_editor_assets() {
+		global $wp_version;
 		$build_path = 'dist/block-editor/';
 
 		$script_path       = $build_path . 'block-editor.js';
@@ -49,18 +48,25 @@ class PUM_Admin_BlockEditor {
 		$script_url        = plugins_url( $script_path, Popup_Maker::$FILE );
 		wp_enqueue_script( 'popup-maker-block-editor', $script_url, array_merge( $script_asset['dependencies'], [ 'wp-edit-post' ] ), $script_asset['version'] );
 
+		self::register_block_assets();
+
 		wp_localize_script(
 			'popup-maker-block-editor',
 			'pum_block_editor_vars',
-			[
-				'popups'                        => pum_get_all_popups(),
-				'popup_trigger_excluded_blocks' => apply_filters(
-					'pum_block_editor_popup_trigger_excluded_blocks',
-					[
-						'core/nextpage',
-					]
-				),
-			]
+			apply_filters(
+				'pum_block_editor_vars',
+				[
+					'compat56'                      => version_compare( $wp_version, '5.6' ),
+					'popups'                        => pum_get_all_popups(),
+					'ctas'                          => PUM_CallToActions::instance()->get_as_array(),
+					'popup_trigger_excluded_blocks' => apply_filters(
+						'pum_block_editor_popup_trigger_excluded_blocks',
+						[
+							'core/nextpage',
+						]
+					),
+				]
+			)
 		);
 
 		$editor_styles_path       = $build_path . 'block-editor-styles.css';
